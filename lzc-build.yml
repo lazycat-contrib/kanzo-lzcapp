@@ -1,0 +1,33 @@
+manifest: ./lzc-manifest.yml
+contentdir: ./content
+pkgout: ./dist
+icon: ./icon.png
+buildscript: |
+  set -eu
+  rm -rf content dist
+  mkdir -p content/lazycat-injects dist
+  # 文件选择器注入脚本（商店硬性要求：应用有上传/下载时必须接入）
+  cp scripts/lzc-file-chooser-inject.js content/lazycat-injects/lzc-file-chooser-inject.js
+  # 下载上游官方 release 的 musl 静态二进制并校验 sha256
+  TAG="$(sed -n 's/^version: *//p' package.yml | tr -d ' ')"
+  ARCH="amd64"
+  case "${LAZYCAT_TARGET_ARCH:-amd64}" in
+    arm64) ARCH="aarch64" ;;
+    amd64) ARCH="x86_64" ;;
+  esac
+  BASE="https://github.com/emanuele-em/kanzo/releases/download/v${TAG}"
+  F="kanzo-${ARCH}-unknown-linux-musl.tar.xz"
+  curl -fsSL --retry 3 -o "/tmp/${F}" "${BASE}/${F}"
+  curl -fsSL --retry 3 -o "/tmp/${F}.sha256" "${BASE}/${F}.sha256"
+  # sha256 文件格式：hash *filename 或 hash filename
+  EXPECTED="$(awk '{print $1}' "/tmp/${F}.sha256")"
+  ACTUAL="$(sha256sum "/tmp/${F}" | awk '{print $1}')"
+  if [ "${EXPECTED}" != "${ACTUAL}" ]; then
+    echo "checksum mismatch for ${F}: expected ${EXPECTED} got ${ACTUAL}" >&2
+    exit 1
+  fi
+  tar -xJf "/tmp/${F}" -C /tmp
+  BIN="/tmp/kanzo-${ARCH}-unknown-linux-musl/kanzo"
+  cp "${BIN}" content/kanzo
+  chmod +x content/kanzo
+  ./content/kanzo --version

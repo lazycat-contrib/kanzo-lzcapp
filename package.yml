@@ -1,0 +1,18 @@
+package: community.lazycat.app.kanzo
+version: 0.2.1
+name: Kanzo
+description: A tiny kanban board for humans and coding agents — one small program, MCP server included.
+min_os_version: 1.5.0
+homepage: https://github.com/emanuele-em/kanzo
+author: emanuele-em
+license: AGPL-3.0
+locales:
+  zh:
+    name: "Kanzo"
+    description: "给你和你的编程智能体用的小看板：一个程序搞定看板与 MCP 服务器，无账号零配置。"
+  zh_CN:
+    name: "Kanzo"
+    description: "给你和你的编程智能体用的小看板：一个程序搞定看板与 MCP 服务器，无账号零配置。"
+  en:
+    name: "Kanzo"
+    description: "A tiny kanban board for humans and coding agents — MCP server included, zero setup."

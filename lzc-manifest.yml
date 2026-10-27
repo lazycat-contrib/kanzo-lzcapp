@@ -1,0 +1,34 @@
+application:
+  subdomain: kanzo
+  multi_instance: false
+  background_task: true
+  # 不设置 public_path：个人看板默认要求懒猫账号登录，避免 MCP/看板裸露在公网
+  upstreams:
+    - location: /
+      backend: http://127.0.0.1:4242/
+      backend_launch_command: /lzcapp/pkg/content/kanzo --no-open
+  environment:
+    - KANZO_HOME=/lzcapp/var/kanzo
+  injects:
+    # Kanzo 支持把图片粘贴/拖进任务和评论，必须接入懒猫网盘文件选择器
+    - id: open-save-chooser
+      on: browser
+      when:
+        - /*
+      do:
+        - src: file:///lzcapp/pkg/content/lazycat-injects/lzc-file-chooser-inject.js
+
+usage: |
+  Kanzo 是一个给你（和你的编程智能体）用的小看板：浏览器里是看板，同时内置 MCP 服务器。
+
+  【使用】
+  打开应用域名即进入看板界面。n 新建任务，/ 或 Ctrl+K 全项目搜索。
+  MCP 端点位于同一应用的 /mcp 路径（MCP over HTTP）。
+  Claude Code / Codex 等客户端添加该端点后，可以让它们"取下一个任务并完成"。
+
+  【数据】
+  看板数据保存在 /lzcapp/var/kanzo（SQLite + config.toml），升级不丢失。
+  如需在多台机器间同步，在设置里配置 git 同步仓库地址。
+
+  【安全】
+  看板自身没有账号体系，本应用默认由懒猫微服登录保护；请不要把地址分享给不信任的人。

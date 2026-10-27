@@ -1,0 +1,63 @@
+name: Build and publish Kanzo LPK
+
+on:
+  # Daily upstream check; GitHub Actions cron is UTC (CST = UTC+8)
+  schedule:
+    - cron: "31 5 * * *"
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - .github/lazycat-action.yml
+      - .github/workflows/lazycat.yml
+      - lzc-build.yml
+      - lzc-manifest.yml
+      - package.yml
+      - scripts/sync-upstream.sh
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-upstream:
+    # schedule / manual trigger only; the resulting push triggers the publish job
+    if: github.event_name != 'push' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Sync upstream Kanzo release version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="$(gh api repos/emanuele-em/kanzo/releases/latest --jq '.tag_name' | sed 's/^v//')"
+          CURRENT="$(sed -n 's/^version: *//p' package.yml | tr -d ' ')"
+          echo "upstream=$TAG current=$CURRENT"
+          if [ "${TAG}" = "${CURRENT}" ]; then
+            echo "no update needed"
+            exit 0
+          fi
+          sed -i "s/^version: .*/version: ${TAG}/" package.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.yml
+          git commit -m "chore: update Kanzo to v${TAG}"
+          git push
+
+  lazycat:
+    if: github.event_name != 'schedule'
+    uses: ca-x/lazycat-github-action/.github/workflows/lazycat.yml@v1
+    with:
+      operation: auto
+      config: .github/lazycat-action.yml
+      dry-run: ${{ github.event_name == 'pull_request' }}
+      versioned-release-asset: true
+      toolchains: none
+    secrets:
+      APPSTORE_URL: ${{ secrets.APPSTORE_URL }}
+      APPSTORE_TOKEN: ${{ secrets.APPSTORE_TOKEN }}
+      APP_ID: ${{ secrets.APP_ID }}
+      PRIVATE_STORE_GROUP_CODES: ${{ secrets.PRIVATE_STORE_GROUP_CODES }}
