@@ -1,5 +1,5 @@
 package: community.lazycat.app.kanzo
-version: 0.4.0
+version: 0.4.1
 name: Kanzo
 description: A tiny kanban board for humans and coding agents — one small program, MCP server included.
 min_os_version: 1.5.0
